@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AZERTY to Arabic keyboard</title>
+<style>
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    max-width: 700px;
+    margin: 40px auto;
+    padding: 0 16px;
+    color: #222;
+    background: #fff;
+  }
+  h1 { font-size: 20px; font-weight: 600; }
+  label { font-size: 13px; color: #555; }
+  textarea {
+    width: 100%;
+    font-size: 22px;
+    padding: 10px;
+    box-sizing: border-box;
+    resize: vertical;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+  }
+  .row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .controls { margin-top: 14px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  button {
+    font-size: 13px;
+    padding: 6px 12px;
+    border: 1px solid #999;
+    border-radius: 6px;
+    background: #f5f5f5;
+    cursor: pointer;
+  }
+  button:hover { background: #ebebeb; }
+  #status { font-size: 13px; color: #888; }
+  #mapBox { display:none; margin-top: 16px; font-size: 13px; color: #555; border-top: 1px solid #ddd; padding-top: 14px; }
+  #mapGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 6px; }
+  .cell { border: 1px solid #ddd; border-radius: 6px; padding: 6px; text-align: center; }
+  .cell .ar { font-size: 18px; direction: rtl; }
+  .cell .code { font-size: 10px; color: #999; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<h1>Type Arabic using your AZERTY keyboard</h1>
+<div class="row">
+  <label>Click in the box below, then type with your AZERTY keyboard</label>
+  <button id="copyBtn">Copy</button>
+</div>
+
+<textarea id="out" dir="rtl" rows="6" placeholder="..."></textarea>
+
+<div class="controls">
+  <button id="toggleMap">Show key map</button>
+  <button id="clearBtn">Clear</button>
+  <span id="status"></span>
+</div>
+
+<div id="mapBox">
+  <p>This mirrors how Windows maps Arabic letters to physical key positions (scancodes) — the same way it works when you switch your keyboard language to Arabic on a QWERTY machine. Since you have an AZERTY keyboard, the letters printed on your keys won't match what comes out — go by position, not by the printed letter.</p>
+  <div id="mapGrid"></div>
+</div>
+
+<script>
+const map = {
+  Backquote: 'ذ', Digit1:'١', Digit2:'٢', Digit3:'٣', Digit4:'٤', Digit5:'٥',
+  Digit6:'٦', Digit7:'٧', Digit8:'٨', Digit9:'٩', Digit0:'٠', Minus:'-', Equal:'=',
+  KeyQ:'ض', KeyW:'ص', KeyE:'ث', KeyR:'ق', KeyT:'ف', KeyY:'غ', KeyU:'ع', KeyI:'ه',
+  KeyO:'خ', KeyP:'ح', BracketLeft:'ج', BracketRight:'د',
+  KeyA:'ش', KeyS:'س', KeyD:'ي', KeyF:'ب', KeyG:'ل', KeyH:'ا', KeyJ:'ت', KeyK:'ن',
+  KeyL:'م', Semicolon:'ك', Quote:'ط',
+  KeyZ:'ئ', KeyX:'ء', KeyC:'ؤ', KeyV:'ر', KeyB:'لا', KeyN:'ى', KeyM:'ة',
+  Comma:'و', Period:'ز', Slash:'ظ',
+  Space:' '
+};
+
+const shiftMap = {
+  Digit1:'!', Digit2:'@', Digit3:'#', Digit4:'$', Digit5:'%', Digit6:'^',
+  Digit7:'&', Digit8:'*', Digit9:'(', Digit0:')',
+  KeyD:'إ', KeyH:'أ', KeyJ:'ـ', Comma:'،', Period:'.', Semicolon:'ك',
+  KeyB:'لإ'
+};
+
+const out = document.getElementById('out');
+const status = document.getElementById('status');
+
+out.addEventListener('keydown', function(e){
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (['Tab','Enter','Backspace','Delete','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.code)) return;
+  let ch = null;
+  if (e.shiftKey && shiftMap.hasOwnProperty(e.code)) ch = shiftMap[e.code];
+  else if (map.hasOwnProperty(e.code)) ch = map[e.code];
+  if (ch !== null){
+    e.preventDefault();
+    const start = out.selectionStart, end = out.selectionEnd;
+    out.value = out.value.slice(0,start) + ch + out.value.slice(end);
+    out.selectionStart = out.selectionEnd = start + ch.length;
+  }
+});
+
+document.getElementById('copyBtn').addEventListener('click', function(){
+  out.select();
+  document.execCommand('copy');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(out.value).catch(function(){});
+  }
+  status.textContent = 'Copied';
+  setTimeout(function(){ status.textContent=''; }, 1500);
+});
+
+document.getElementById('clearBtn').addEventListener('click', function(){
+  out.value = '';
+  out.focus();
+});
+
+const toggleBtn = document.getElementById('toggleMap');
+const mapBox = document.getElementById('mapBox');
+toggleBtn.addEventListener('click', function(){
+  const show = mapBox.style.display === 'none';
+  mapBox.style.display = show ? 'block' : 'none';
+  toggleBtn.textContent = show ? 'Hide key map' : 'Show key map';
+});
+
+const rows = [
+  ['Backquote','Digit1','Digit2','Digit3','Digit4','Digit5','Digit6','Digit7','Digit8','Digit9','Digit0','Minus','Equal'],
+  ['KeyQ','KeyW','KeyE','KeyR','KeyT','KeyY','KeyU','KeyI','KeyO','KeyP','BracketLeft','BracketRight'],
+  ['KeyA','KeyS','KeyD','KeyF','KeyG','KeyH','KeyJ','KeyK','KeyL','Semicolon','Quote'],
+  ['KeyZ','KeyX','KeyC','KeyV','KeyB','KeyN','KeyM','Comma','Period','Slash']
+];
+const grid = document.getElementById('mapGrid');
+rows.forEach(function(row){
+  row.forEach(function(code){
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.innerHTML = '<div class="ar">' + map[code] + '</div><div class="code">' + code.replace('Key','').replace('Digit','') + '</div>';
+    grid.appendChild(cell);
+  });
+});
+</script>
+</body>
+</html>
